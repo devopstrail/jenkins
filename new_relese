@@ -1,0 +1,36 @@
+pipeline {
+        agent any
+
+	parameters {
+		string(defaultValue: "1.0", description: 'Version of nwe relese', name: 'new_version')
+	}
+
+	environment {
+		branch_name = "relese-$new_version"
+	}
+
+
+        stages {
+                stage ('Checkouting code') {
+                        steps {
+                                cleanWs()
+				git branch: 'develop',
+					credentialsId: 'f3ce3d07-bcf9-4d7d-b31c-a419d5abe56b',
+					url: 'https://github.com/devopstrail/java-calculator'
+                        }
+                }
+		stage ('Bump version') {
+			steps {
+				withCredentials([usernamePassword(credentialsId: 'f3ce3d07-bcf9-4d7d-b31c-a419d5abe56b', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+					sh """
+						git checkout -b ${branch_name}
+						/bin/sed -i 's/<version>.*<\\/version>/<version>${new_version}<\\/version>/g' pom.xml
+						git add .	
+						git commit -m "${branch_name}"
+						git push "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/devopstrail/java-calculator" ${branch_name}
+					"""
+				}
+			}
+		}
+        }
+}
